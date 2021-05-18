@@ -14,7 +14,7 @@
             name="duration"
             type="radio"
             value="10"
-            @click="updateISO(10)"
+            @click="updateISOLayer(10)"
           />
           <div class="toggle toggle--active-null toggle--null">10 min 🚗</div>
         </label>
@@ -23,7 +23,7 @@
             name="duration"
             type="radio"
             value="20"
-            @click="updateISO(20)"
+            @click="updateISOLayer(20)"
           />
           <div class="toggle toggle--active-null toggle--null">20 min 🚗</div>
         </label>
@@ -32,7 +32,7 @@
             name="duration"
             type="radio"
             value="30"
-            @click="updateISO(30)"
+            @click="updateISOLayer(30)"
           />
           <div class="toggle toggle--active-null toggle--null">30 min 🚗</div>
         </label>
@@ -45,7 +45,7 @@
             name="price"
             type="radio"
             value="100000"
-            @click="updateHomes(100000)"
+            @click="updateHomesLayer(100000)"
           />
           <div class="toggle toggle--active-null toggle--null">100k EUR</div>
         </label>
@@ -54,7 +54,7 @@
             name="price"
             type="radio"
             value="200000"
-            @click="updateHomes(200000)"
+            @click="updateHomesLayer(200000)"
           />
           <div class="toggle toggle--active-null toggle--null">200k EUR</div>
         </label>
@@ -63,7 +63,7 @@
             name="price"
             type="radio"
             value="300000"
-            @click="updateHomes(300000)"
+            @click="updateHomesLayer(300000)"
           />
           <div class="toggle toggle--active-null toggle--null">300k EUR</div>
         </label>
@@ -89,33 +89,19 @@ export default {
       minutes: null,
     };
   },
-  async fetch(context) {},
   async mounted() {
     this.api = axios.create({
       baseURL: window.location.origin,
     });
-
     this.getIdealistaToken();
-
     this.setupMap();
-
     this.getAirports();
-  },
-  computed: {
-    lngLat: function () {
-      // Create a LngLat object to use in the marker initialization
-      // https://docs.mapbox.com/mapbox-gl-js/api/#lnglat
-      return {
-        lon: this.lon,
-        lat: this.lat,
-      };
-    },
   },
   methods: {
     getIdealistaToken: async function () {
       const response = await this.api.get("/key/idealista");
       this.token = response.data.access_token;
-      console.log("Retrieved Idealista Bearer token: ", this.token);
+      //console.log("Retrieved Idealista Bearer token: ", this.token);
     },
     setupMap: async function () {
       const response = await this.api.get("/key/mapbox");
@@ -173,23 +159,20 @@ export default {
         var features = this.map.queryRenderedFeatures(e.point, {
           layers: ["homes"],
         });
-
         /* If yes, then: */
         if (features.length) {
           var home = features[0];
-
           /* Fly to the point */
           this.map.flyTo({
             center: home.geometry.coordinates,
             essential: true, // this animation is considered essential with respect to prefers-reduced-motion
           });
-
           /* Close all other popups and display popup for clicked store */
           var popUps = document.getElementsByClassName("mapboxgl-popup");
           /** Check if there is already a popup on the map and if so, remove it */
           if (popUps[0]) popUps[0].remove();
 
-          var popup = new mapboxgl.Popup({ closeOnClick: false })
+          new mapboxgl.Popup({ closeOnClick: false })
             .setLngLat(home.geometry.coordinates)
             .setHTML(
               "<h2>" +
@@ -206,7 +189,7 @@ export default {
         }
       });
     },
-    updateISO: async function (minutes) {
+    updateISOLayer: async function (minutes) {
       this.minutes = minutes;
       let params = {
         lon: this.lon,
@@ -222,31 +205,7 @@ export default {
       // Set the 'iso' source's data to what's returned by the API query
       this.map.getSource("iso").setData(response.data);
     },
-    goTo: async function ({ latitude, longitude }) {
-      this.lon = longitude;
-      this.lat = latitude;
-      this.map.flyTo({
-        center: [this.lon, this.lat],
-        essential: true, // this animation is considered essential with respect to prefers-reduced-motion
-      });
-      // set the marker to the new location
-      // Set up a marker that you can use to show the query's coordinates
-      new mapboxgl.Marker({
-        color: "#314ccd",
-      })
-        .setLngLat(this.lngLat)
-        .addTo(this.map);
-      // update the driving distance layer and homes
-      if (this.minutes) this.updateISO(this.minutes);
-      if (this.price) this.updateHomes(this.price);
-    },
-    getAirports: async function () {
-      const params = this.lngLat;
-      const response = await this.api.get("/amadeus", { params });
-      //console.log("Amadeus response: ", response.data);
-      this.airports = response.data;
-    },
-    updateHomes: async function (price) {
+    updateHomesLayer: async function (price) {
       this.price = price;
       let homes = {
         type: "FeatureCollection",
@@ -254,7 +213,7 @@ export default {
       };
       //console.log("Idealista Bearer token to use: ", this.token);
       const params = {
-        center: this.lngLat.lat + "," + this.lngLat.lon,
+        center: this.lat + "," + this.lon,
         distance: 20000,
         operation: "sale",
         propertyType: "homes",
@@ -284,6 +243,36 @@ export default {
         homes.features.push(feature);
       });
       this.map.getSource("homes").setData(homes);
+    },
+    goTo: async function ({ latitude, longitude }) {
+      this.lon = longitude;
+      this.lat = latitude;
+      this.map.flyTo({
+        center: [this.lon, this.lat],
+        essential: true, // this animation is considered essential with respect to prefers-reduced-motion
+      });
+      // set the marker to the new location
+      // Set up a marker that you can use to show the query's coordinates
+      new mapboxgl.Marker({
+        color: "#314ccd",
+      })
+        .setLngLat({
+          lon: this.lon,
+          lat: this.lat,
+        })
+        .addTo(this.map);
+      // update the driving distance layer and homes
+      if (this.minutes) this.updateISOLayer(this.minutes);
+      if (this.price) this.updateHomesLayer(this.price);
+    },
+    getAirports: async function () {
+      const params = {
+        lon: this.lon,
+        lat: this.lat,
+      };
+      const response = await this.api.get("/amadeus", { params });
+      //console.log("Amadeus response: ", response.data);
+      this.airports = response.data;
     },
   },
 };
