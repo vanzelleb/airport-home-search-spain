@@ -3,12 +3,21 @@
     <div id="map"></div>
     <div class="absolute fl my24 mx24 py24 px24 bg-gray-faint round">
       <h4 class="txt-m txt-bold mb6">Choose an airport:</h4>
-      <div v-for="airport in airports" @click="goTo(airport.geoCode)">
-        <a href="#" role="button">{{ airport.detailedName }}</a>
+      <div class="select-container">
+        <select class="select select--stroke" v-model="selectedAirport">
+          <option disabled value="">Please select one</option>
+          <option
+            v-for="(airport, idx) in airports"
+            :value="airport"
+            :key="idx"
+          >
+            {{ airport.detailedName }}
+          </option>
+        </select>
+        <div class="select-arrow"></div>
       </div>
-
       <h4 class="txt-m txt-bold mb6 mt24">Choose a maximum drive duration:</h4>
-      <div class="mb12 mr12 toggle-group align-center">
+      <div class="mr12 toggle-group align-center">
         <label class="toggle-container">
           <input
             name="duration"
@@ -39,7 +48,7 @@
       </div>
 
       <h4 class="txt-m txt-bold mb6 mt24">Choose a maximum home price:</h4>
-      <div class="mb12 mr12 toggle-group align-center">
+      <div class="mr12 toggle-group align-center">
         <label class="toggle-container">
           <input
             name="price"
@@ -87,6 +96,7 @@ export default {
       token: null,
       price: null,
       minutes: null,
+      selectedAirport: null,
     };
   },
   async mounted() {
@@ -96,6 +106,13 @@ export default {
     this.getIdealistaToken();
     this.setupMap();
     this.getAirports();
+  },
+  watch: {
+    selectedAirport: function () {
+      this.lon = this.selectedAirport.geoCode.longitude;
+      this.lat = this.selectedAirport.geoCode.latitude;
+      this.goTo();
+    },
   },
   methods: {
     getIdealistaToken: async function () {
@@ -124,14 +141,6 @@ export default {
           },
         });
 
-        this.map.addSource("homes", {
-          type: "geojson",
-          data: {
-            type: "FeatureCollection",
-            features: [],
-          },
-        });
-
         this.map.addLayer(
           {
             id: "isoLayer",
@@ -146,47 +155,63 @@ export default {
           "poi-label"
         );
 
+        // Add an image to use as a custom marker for homes
+        /*var img = new Image();
+        img.src = "~/assets/home-11.svg";
+        this.map.addImage("custom-marker", img);
+        */
+
+        this.map.addSource("homes", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: [],
+          },
+        });
+
         this.map.addLayer({
           id: "homes",
           type: "circle",
           /* Add a GeoJSON source containing place coordinates and information. */
           source: "homes",
+          /*layout: {
+            "icon-image": "custom-marker",
+          },*/
         });
       });
 
-      this.map.on("click", (e) => {
-        /* Determine if a feature in the "locations" layer exists at that point. */
-        var features = this.map.queryRenderedFeatures(e.point, {
-          layers: ["homes"],
-        });
-        /* If yes, then: */
-        if (features.length) {
-          var home = features[0];
-          /* Fly to the point */
-          this.map.flyTo({
-            center: home.geometry.coordinates,
-            essential: true, // this animation is considered essential with respect to prefers-reduced-motion
-          });
-          /* Close all other popups and display popup for clicked store */
-          var popUps = document.getElementsByClassName("mapboxgl-popup");
-          /** Check if there is already a popup on the map and if so, remove it */
-          if (popUps[0]) popUps[0].remove();
+      var popup = new mapboxgl.Popup({
+        closeOnClick: false,
+        closeButton: false,
+      });
 
-          new mapboxgl.Popup({ closeOnClick: false })
-            .setLngLat(home.geometry.coordinates)
-            .setHTML(
-              "<h2>" +
-                home.properties.price +
-                " EUR / " +
-                home.properties.size +
-                "qm </h2><a href=" +
-                home.properties.url +
-                " target='_blank'><img src=" +
-                home.properties.thumbnail +
-                "></img></a>"
-            )
-            .addTo(this.map);
-        }
+      this.map.on("mouseleave", "homes", () => {
+        this.map.getCanvas().style.cursor = "";
+        popup.remove();
+      });
+
+      this.map.on("mouseenter", "homes", (e) => {
+        // Updates the cursor to a hand (interactivity)
+        this.map.getCanvas().style.cursor = "pointer";
+        // Show the popup at the coordinates with some data
+        popup
+          .setLngLat(e.features[0].geometry.coordinates)
+          .setHTML(
+            "<h2>" +
+              e.features[0].properties.price +
+              " EUR / " +
+              e.features[0].properties.size +
+              "qm </h2><a href=" +
+              e.features[0].properties.url +
+              " target='_blank'><img src=" +
+              e.features[0].properties.thumbnail +
+              "></img></a>"
+          )
+          .addTo(this.map);
+      });
+
+      this.map.on("click", "homes", (e) => {
+        window.open(e.features[0].properties.url);
       });
     },
     updateISOLayer: async function (minutes) {
@@ -227,26 +252,28 @@ export default {
       const response = await this.api.get("/idealista", { params });
       //console.log("Idealista response: ", response.data);
 
-      response.data.elementList.forEach((element) => {
-        let feature = {
-          type: "Feature",
-          geometry: {
-            type: "Point",
-            coordinates: [],
-          },
-          properties: {},
-        };
-        feature.geometry.coordinates.push(element.longitude);
-        feature.geometry.coordinates.push(element.latitude);
-        // assign idealista home data to the geojson feature
-        Object.assign(feature.properties, element);
-        homes.features.push(feature);
-      });
-      this.map.getSource("homes").setData(homes);
+      if (response.data.elementList?.length > 0) {
+        response.data.elementList.forEach((element) => {
+          let feature = {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [],
+            },
+            properties: {
+              "marker-symbol": "home",
+            },
+          };
+          feature.geometry.coordinates.push(element.longitude);
+          feature.geometry.coordinates.push(element.latitude);
+          // assign idealista home data to the geojson feature
+          Object.assign(feature.properties, element);
+          homes.features.push(feature);
+        });
+        this.map.getSource("homes").setData(homes);
+      } else alert("No homes found for this criteria.");
     },
-    goTo: async function ({ latitude, longitude }) {
-      this.lon = longitude;
-      this.lat = latitude;
+    goTo: async function () {
       this.map.flyTo({
         center: [this.lon, this.lat],
         essential: true, // this animation is considered essential with respect to prefers-reduced-motion
