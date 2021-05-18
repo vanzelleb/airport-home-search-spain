@@ -14,7 +14,7 @@
             name="duration"
             type="radio"
             value="10"
-            @click="setDuration(10)"
+            @click="updateISO(10)"
           />
           <div class="toggle toggle--active-null toggle--null">10 min 🚗</div>
         </label>
@@ -23,7 +23,7 @@
             name="duration"
             type="radio"
             value="20"
-            @click="setDuration(20)"
+            @click="updateISO(20)"
           />
           <div class="toggle toggle--active-null toggle--null">20 min 🚗</div>
         </label>
@@ -32,8 +32,7 @@
             name="duration"
             type="radio"
             value="30"
-            @click="setDuration(30)"
-            checked
+            @click="updateISO(30)"
           />
           <div class="toggle toggle--active-null toggle--null">30 min 🚗</div>
         </label>
@@ -46,7 +45,7 @@
             name="price"
             type="radio"
             value="100000"
-            @click="setPrice(100000)"
+            @click="updateHomes(100000)"
           />
           <div class="toggle toggle--active-null toggle--null">100k EUR</div>
         </label>
@@ -55,8 +54,7 @@
             name="price"
             type="radio"
             value="200000"
-            @click="setPrice(200000)"
-            checked
+            @click="updateHomes(200000)"
           />
           <div class="toggle toggle--active-null toggle--null">200k EUR</div>
         </label>
@@ -65,7 +63,7 @@
             name="price"
             type="radio"
             value="300000"
-            @click="setPrice(300000)"
+            @click="updateHomes(300000)"
           />
           <div class="toggle toggle--active-null toggle--null">300k EUR</div>
         </label>
@@ -84,22 +82,17 @@ export default {
       api: null,
       lat: 40.4168,
       lon: -3.7038,
-      minutes: 30,
       map: null,
       airports: null,
       token: null,
-      homes: {
-        type: "FeatureCollection",
-        features: [],
-      },
-      homePrice: 200000,
+      price: null,
+      minutes: null,
     };
   },
   async fetch(context) {},
   async mounted() {
     this.api = axios.create({
       baseURL: window.location.origin,
-      //headers: { "Cache-Control": "private,max-age=100000" },
     });
 
     this.getIdealistaToken();
@@ -147,7 +140,10 @@ export default {
 
         this.map.addSource("homes", {
           type: "geojson",
-          data: this.homes,
+          data: {
+            type: "FeatureCollection",
+            features: [],
+          },
         });
 
         this.map.addLayer(
@@ -196,12 +192,11 @@ export default {
           var popup = new mapboxgl.Popup({ closeOnClick: false })
             .setLngLat(home.geometry.coordinates)
             .setHTML(
-              "<h3>" +
+              "<h2>" +
                 home.properties.price +
                 " EUR / " +
                 home.properties.size +
-                "qm </h3>" +
-                "<a href=" +
+                "qm </h2><a href=" +
                 home.properties.url +
                 " target='_blank'><img src=" +
                 home.properties.thumbnail +
@@ -211,28 +206,21 @@ export default {
         }
       });
     },
-    updateISO: async function () {
+    updateISO: async function (minutes) {
+      this.minutes = minutes;
       let params = {
         lon: this.lon,
         lat: this.lat,
-        contours_minutes: this.minutes,
+        contours_minutes: minutes,
         polygons: true,
       };
       // Send a GET request to some REST api
       const response = await this.api.get("/mapbox", {
         params,
       });
-      console.log("Mapbox response: ", response.data);
+      //console.log("Mapbox response: ", response.data);
       // Set the 'iso' source's data to what's returned by the API query
       this.map.getSource("iso").setData(response.data);
-    },
-    setDuration: function (min) {
-      this.minutes = min;
-      this.updateISO();
-    },
-    setPrice: function (price) {
-      this.homePrice = price;
-      this.updateHomes();
     },
     goTo: async function ({ latitude, longitude }) {
       this.lon = longitude;
@@ -248,10 +236,9 @@ export default {
       })
         .setLngLat(this.lngLat)
         .addTo(this.map);
-      // update the driving distance layer
-      this.updateISO();
-
-      this.updateHomes();
+      // update the driving distance layer and homes
+      if (this.minutes) this.updateISO(this.minutes);
+      if (this.price) this.updateHomes(this.price);
     },
     getAirports: async function () {
       const params = this.lngLat;
@@ -259,14 +246,19 @@ export default {
       //console.log("Amadeus response: ", response.data);
       this.airports = response.data;
     },
-    updateHomes: async function () {
-      console.log("Idealista Bearer token to use: ", this.token);
+    updateHomes: async function (price) {
+      this.price = price;
+      let homes = {
+        type: "FeatureCollection",
+        features: [],
+      };
+      //console.log("Idealista Bearer token to use: ", this.token);
       const params = {
         center: this.lngLat.lat + "," + this.lngLat.lon,
         distance: 20000,
         operation: "sale",
         propertyType: "homes",
-        maxPrice: this.homePrice,
+        maxPrice: price,
         maxItems: 50,
         chalet: true,
         countryHouse: true,
@@ -274,7 +266,7 @@ export default {
         token: this.token,
       };
       const response = await this.api.get("/idealista", { params });
-      console.log("Idealista response: ", response.data);
+      //console.log("Idealista response: ", response.data);
 
       response.data.elementList.forEach((element) => {
         let feature = {
@@ -287,10 +279,11 @@ export default {
         };
         feature.geometry.coordinates.push(element.longitude);
         feature.geometry.coordinates.push(element.latitude);
+        // assign idealista home data to the geojson feature
         Object.assign(feature.properties, element);
-        this.homes.features.push(feature);
+        homes.features.push(feature);
       });
-      this.map.getSource("homes").setData(this.homes);
+      this.map.getSource("homes").setData(homes);
     },
   },
 };
