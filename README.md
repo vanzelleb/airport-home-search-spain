@@ -1,13 +1,12 @@
-# Airport driving distance visualizer
+# Airport-friendly home search for Spain
 
-This is an example implementation of the Mapbox and Amadeus APIs based on the Nuxt.js framework. All you need to run it is to setup the following API secrets in your environment variables:
+This is an example implementation of the Mapbox, Idealista and Amadeus APIs. All you need to run it is to setup the following process.env environment variables:
 
 - AMADEUS_APIKEY
 - AMADEUS_APISECRET
 - MAPBOX_ACCESSTOKEN
-
-There is also a codesandbox template you can use right away. The API secrets need to be setup in the Server Control Panel.
-https://codesandbox.io/s/amadeus-mapbox-api-test-btmwj
+- IDEALISTA_KEY
+- IDEALISTA_SECRET
 
 ## Build Setup
 
