@@ -84,6 +84,8 @@
 <script>
 import mapboxgl from "mapbox-gl";
 import axios from "axios";
+import houseMarker from "~/assets/home-11.svg";
+//import airportMarker from "~/assets/airport-15.svg";
 
 export default {
   data() {
@@ -156,10 +158,9 @@ export default {
         );
 
         // Add an image to use as a custom marker for homes
-        /*var img = new Image();
-        img.src = "~/assets/home-11.svg";
-        this.map.addImage("custom-marker", img);
-        */
+        var img = new Image(11, 11);
+        img.onload = () => this.map.addImage("house-marker", img);
+        img.src = houseMarker;
 
         this.map.addSource("homes", {
           type: "geojson",
@@ -171,12 +172,12 @@ export default {
 
         this.map.addLayer({
           id: "homes",
-          type: "circle",
+          type: "symbol",
           /* Add a GeoJSON source containing place coordinates and information. */
           source: "homes",
-          /*layout: {
-            "icon-image": "custom-marker",
-          },*/
+          layout: {
+            "icon-image": "house-marker",
+          },
         });
       });
 
@@ -279,10 +280,7 @@ export default {
         essential: true, // this animation is considered essential with respect to prefers-reduced-motion
       });
       // set the marker to the new location
-      // Set up a marker that you can use to show the query's coordinates
-      new mapboxgl.Marker({
-        color: "#314ccd",
-      })
+      new mapboxgl.Marker({ color: "#FF0000" })
         .setLngLat({
           lon: this.lon,
           lat: this.lat,
