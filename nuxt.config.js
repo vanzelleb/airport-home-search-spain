@@ -21,5 +21,6 @@ export default {
     { path: "/amadeus", handler: "~/serverMiddleware/amadeus.js" },
     { path: "/key/idealista", handler: "~/serverMiddleware/idealistakey.js" },
     { path: "/idealista", handler: "~/serverMiddleware/idealista.js" }
-  ]
+  ],
+  target: "static"
 };
