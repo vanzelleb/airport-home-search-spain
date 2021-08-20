@@ -1649,10 +1649,10 @@ alphanum-sort@^1.0.0:
   resolved "https://registry.yarnpkg.com/alphanum-sort/-/alphanum-sort-1.0.2.tgz#97a1119649b211ad33691d9f9f486a8ec9fbe0a3"
   integrity sha1-l6ERlkmyEa0zaR2fn0hqjsn74KM=
 
-amadeus@5.6.1:
-  version "5.6.1"
-  resolved "https://registry.yarnpkg.com/amadeus/-/amadeus-5.6.1.tgz#1a187d177915ff77e378fe2b8123b312043bceaa"
-  integrity sha512-7tuzrt78XLSgFHu5v9UkqLsbBnmdOzzjdkWSZ4HXQBfISwtoC3kjNlgNuSvuO1XzkUzlwQu31J98U1FwzefLHg==
+amadeus@5.7.0:
+  version "5.7.0"
+  resolved "https://registry.yarnpkg.com/amadeus/-/amadeus-5.7.0.tgz#1e31d713dc67f92bd98fc77ba386414ac85d201e"
+  integrity sha512-sNMzA9cJZMDUY6+CPk7IRwgPE7EMdaqNqZzKqZMFwQSeOX6dDIWECA2hLTw0EvCIdUYODPaeLMEClxpp3LXfiw==
   dependencies:
     bluebird "^3.5.1"
     qs "^6.9.1"

@@ -9,6 +9,7 @@ export default async function (req, res, next) {
     clientId: process.env.AMADEUS_APIKEY,
     clientSecret: process.env.AMADEUS_APISECRET
   });
+  
   // Airport Nearest Relevant Airport (for London)
   amadeus.referenceData.locations.airports
     .get({

@@ -85,6 +85,7 @@
 import mapboxgl from "mapbox-gl";
 import axios from "axios";
 import houseMarker from "~/assets/home-11.svg";
+import Amadeus from "amadeus";
 //import airportMarker from "~/assets/airport-15.svg";
 
 export default {
@@ -295,9 +296,31 @@ export default {
         lon: this.lon,
         lat: this.lat,
       };
-      const response = await this.api.get("/amadeus", { params });
+
+      //const response = await this.api.get("/amadeus", { params });
       //console.log("Amadeus response: ", response.data);
-      this.airports = response.data;
+      //this.airports = response.data;
+      var amadeus = new Amadeus({
+        clientId: "BiatLQcqA3wI7qhVAaEBkpQANC5oGFAc",
+        clientSecret: "FFtq5P3GpIay4Jse",
+      });
+
+      // Airport Nearest Relevant Airport (for London)
+      amadeus.referenceData.locations.airports
+        .get({
+          longitude: this.lon,
+          latitude: this.lat,
+        })
+        .then(
+          function (response) {
+            //console.log("Amadeus API data: ", response.data);
+            // cache API response in the browser for 1 day
+            this.airports = response.data;
+          }.bind(this)
+        )
+        .catch(function (responseError) {
+          console.log("Amadeus API error: ", responseError);
+        });
     },
   },
 };

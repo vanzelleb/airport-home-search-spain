@@ -8,7 +8,7 @@
     "post-update": "yarn upgrade --latest"
   },
   "dependencies": {
-    "amadeus": "5.6.1",
+    "amadeus": "5.7.0",
     "axios": "0.21.1",
     "form-data": "4.0.0",
     "mapbox-gl": "2.2.0",
@@ -16,6 +16,6 @@
     "qs": "6.10.1"
   },
   "keywords": [],
-  "name": "home-search",
+  "name": "airporthomesearch",
   "description": ""
 }
